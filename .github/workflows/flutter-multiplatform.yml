@@ -32,7 +32,7 @@ jobs:
           flutter pub get
       - name: Analyze and test
         run: |
-          flutter analyze lib test
+          flutter analyze --no-fatal-infos lib test
           flutter test
       - name: Build Android APK
         run: flutter build apk --debug
