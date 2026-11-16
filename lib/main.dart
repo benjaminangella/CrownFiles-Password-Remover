@@ -129,9 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Text('File tools', style: TextStyle(color: ink, fontSize: 21, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 16),
                   _FormatTile(title: 'PDF Security', detail: 'Protect, unlock, change', symbol: 'PDF', color: const Color(0xFFD6424E), onTap: () => open(FileAction.protect)),
-                  _FormatTile(title: 'Excel Tools', detail: 'Sheets and workbooks • Coming soon', symbol: 'X', color: const Color(0xFF168B59), onTap: () => _comingSoon('Excel')),
-                  _FormatTile(title: 'Word Tools', detail: 'Documents • Coming soon', symbol: 'W', color: const Color(0xFF3466CD), onTap: () => _comingSoon('Word')),
-                  _FormatTile(title: 'PowerPoint Tools', detail: 'Presentations • Coming soon', symbol: 'P', color: const Color(0xFFE37739), onTap: () => _comingSoon('PowerPoint')),
+                  _FormatTile(title: 'Excel Tools', detail: 'Inspect & edit workbook locks', symbol: 'X', color: const Color(0xFF168B59), onTap: () => open(FileAction.inspect)),
+                  _FormatTile(title: 'Word Tools', detail: 'Inspect & edit document locks', symbol: 'W', color: const Color(0xFF3466CD), onTap: () => open(FileAction.inspect)),
+                  _FormatTile(title: 'PowerPoint Tools', detail: 'Inspect presentation security', symbol: 'P', color: const Color(0xFFE37739), onTap: () => open(FileAction.inspect)),
                 ],
                 const SizedBox(height: 32),
                 const Center(child: Text('Local processing • Original files preserved', style: TextStyle(color: Color(0xFF8895A5), fontSize: 12))),
@@ -143,11 +143,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _comingSoon(String product) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$product password support is in development. PDF protection is available now.')),
-    );
-  }
 }
 
 class _ActionTile extends StatelessWidget {
