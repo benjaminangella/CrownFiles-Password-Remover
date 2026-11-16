@@ -84,6 +84,6 @@ jobs:
             gh release upload "$TAG" releases/* --clobber
             gh release edit "$TAG" --notes-file /tmp/release-notes.md --prerelease
           else
-            gh release create "$TAG" releases/* --target 43851732896 --title "Crown Password Studio v0.2.0 beta 1 — Testing builds" --notes-file /tmp/release-notes.md --prerelease
+            gh release create "$TAG" releases/* --target c72f777266fb849844967afeb3be3a70b4d1b8ff --title "Crown Password Studio v0.2.0 beta 1 — Testing builds" --notes-file /tmp/release-notes.md --prerelease
           fi
           echo "RELEASE_URL=https://github.com/${GH_REPO}/releases/tag/${TAG}" >> "$GITHUB_STEP_SUMMARY"
