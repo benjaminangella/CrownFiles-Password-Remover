@@ -1,0 +1,89 @@
+name: Publish Crown Studio test release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-test-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the six verified build artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p staging/Android staging/Windows staging/Linux staging/macOS staging/iOS-Simulator staging/Web releases
+          gh run download 43851732896 --name crown-android-debug-apk --dir staging/Android
+          gh run download 43851732896 --name crown-windows-unsigned --dir staging/Windows
+          gh run download 43851732896 --name crown-linux-unsigned --dir staging/Linux
+          gh run download 43851732896 --name crown-macos-unsigned --dir staging/macOS
+          gh run download 43851732896 --name crown-ios-simulator-unsigned --dir staging/iOS-Simulator
+          gh run download 43851732896 --name crown-web --dir staging/Web
+
+          APK="$(find staging/Android -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          cp "$APK" releases/CrownPasswordStudio-Android-DEBUG.apk
+          for platform in Windows Linux macOS iOS-Simulator Web; do
+            (cd "staging/$platform" && zip -q -r "../../releases/CrownPasswordStudio-$platform-TEST.zip" .)
+          done
+          printf '%s\n'             'SHA-256 checksums of these pre-release artifacts:'             > releases/SHA256SUMS.txt
+          (cd releases && sha256sum *.apk *.zip >> SHA256SUMS.txt)
+          ls -lh releases
+
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG="v0.2.0-beta.1"
+          cat > /tmp/release-notes.md <<'NOTES'
+          ## Crown Password Studio — Development preview
+
+          This is an **early testing release, not a Play Store-ready or production-signed release**.
+
+          ### Downloads
+          - **Android:** CrownPasswordStudio-Android-DEBUG.apk — debug-signed APK for testing.
+          - **Windows:** CrownPasswordStudio-Windows-TEST.zip — unsigned Windows desktop build.
+          - **Linux:** CrownPasswordStudio-Linux-TEST.zip — Linux x64 desktop bundle.
+          - **macOS:** CrownPasswordStudio-macOS-TEST.zip — unsigned macOS application.
+          - **iOS:** CrownPasswordStudio-iOS-Simulator-TEST.zip — iOS **simulator only**, not installable on a physical iPhone.
+          - **Web:** CrownPasswordStudio-Web-TEST.zip — static web build for hosting.
+          - SHA256SUMS.txt — file integrity checksums.
+
+          Builds are sourced from successful cross-platform GitHub Actions run [43851732896](https://github.com/benjaminangella/CrownFiles-Password-Remover/actions/runs/43851732896).
+
+          ### What is implemented
+          - Shared Flutter UI with Crown security actions and responsive layouts.
+          - Local PDF protection, authorized unlocking with the current password, password changes, and basic inspection.
+          - File picking and saving the result as a new document.
+          - Word, Excel, and PowerPoint file-type recognition with explicit coming-soon messaging.
+
+          ### Not yet implemented or verified
+          - Unknown-password removal for strongly encrypted Office or PDF documents.
+          - Excel sheet/workbook and VBA security processing.
+          - Word and PowerPoint opening-password management.
+          - Batch operations and device-level compatibility validation.
+          - Full PDF regression testing, accessibility, privacy review, Play App Signing, AAB generation, and production store publication.
+          - Signed Windows installers, Apple device distribution, and web hosting.
+
+          **Do not submit this build to Google Play as a finished application.**
+          NOTES
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" releases/* --clobber
+            gh release edit "$TAG" --notes-file /tmp/release-notes.md --prerelease
+          else
+            gh release create "$TAG" releases/* --target 43851732896 --title "Crown Password Studio v0.2.0 beta 1 — Testing builds" --notes-file /tmp/release-notes.md --prerelease
+          fi
+          echo "RELEASE_URL=https://github.com/${GH_REPO}/releases/tag/${TAG}" >> "$GITHUB_STEP_SUMMARY"
