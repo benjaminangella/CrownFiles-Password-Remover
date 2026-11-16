@@ -25,12 +25,15 @@ See [CI and signing guide](docs/CI-RELEASES.md).
 - Local PDF protection with AES-256, unlocking using a correct existing password, and password changes.
 - Save processed PDFs under new filenames; keep original untouched.
 - Basic PDF inspection.
-- Excel, Word and PowerPoint file recognition. **Their security engines are not implemented yet.**
+- Local Word and Excel OOXML editing-protection inspection (including macro-enabled document detection).
+- Create separate editable copies of unencrypted `.xlsx` / `.xlsm` / `.docx` / `.docm` documents where supported editing restrictions are found. Existing content and VBA binaries are preserved, with an output ZIP integrity check.
+- Detect modern Office opening-password containers and identify unsupported legacy formats without claiming to decrypt them.
+- Recognize PowerPoint file types; full PowerPoint protection processing remains under development.
 - Shared file picker for mobile, desktop, and web.
 
 ## Security limitations
 
-Strong opening-password encryption cannot be guaranteed to be removed without the correct password or another legitimate recovery method. This first implementation does not include forgotten-password cracking or bypass. Editing restrictions and opening-password encryption are distinct.
+Strong opening-password encryption cannot be guaranteed to be removed without the correct password or another legitimate recovery method. This first implementation does not include forgotten-password cracking or bypass. Editing restrictions and opening-password encryption are distinct. Modern Office opening-password encryption, older binary Office formats, and VBA project-password recovery are **not** implemented in the shared Flutter engine. The original CrownFiles repository has separate Python desktop experiments, but they cannot automatically run in an Android application. Editing-restriction cleanup is not guaranteed to preserve all specialized Office extensions or digital signatures; test saved copies in Office before relying on them.
 
 The previous Android-specific Kotlin proof of concept remains in `app/` for reference; the supported cross-platform implementation is in `lib/`. The native-only CI is manual.
 
