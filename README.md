@@ -1,33 +1,39 @@
 # CrownFiles: Password Remover — Crown Password Studio
 
-An Android-first, offline Office/PDF file security application by AROSOFT Innovations Ltd.
+Cross-platform Office and PDF security tools by AROSOFT Innovations Ltd.
 
-## First implementation (0.1.0)
+## Development: GitHub Actions only
 
-- Minimal, spacious native Jetpack Compose UI with Crown navy, gold, and clean white cards.
-- Android system file selection and save-as-new-file workflow; no broad storage permission.
-- PDF password protection, unlocking with a **valid existing password**, and password changes.
-- Local processing using PDFBox Android. The source file is never overwritten.
-- Detects common Word, Excel, PowerPoint and PDF extensions, and clearly identifies Office workflows as upcoming (not falsely advertised as complete).
-- Passwords are held only in UI memory during the action and cleared on completion/cancellation. No analytics, ads, or network permission.
+**No Android Studio or local Apple/Windows development setup is required from the owner.** The shared Flutter source is in `lib/`. GitHub Actions handles platform generation, analysis, tests, and packaging for:
 
-## Important limitations
+- Android test APK (Ubuntu runner)
+- Windows desktop (Windows runner)
+- iOS/iPadOS simulator without signing (macOS runner)
+- macOS desktop (macOS runner)
+- Linux desktop (Ubuntu runner)
+- Web (Ubuntu runner)
 
-Strongly encrypted files cannot be guaranteed to open without a valid password. No cracking, brute-force, bypass, or unknown-password removal is implemented. `Unlock` requires the current password. PDF permissions and Office worksheet protection are not equivalent to file-opening encryption.
+**Builds:** [Crown Studio | Cross-platform builds](https://github.com/benjaminangella/CrownFiles-Password-Remover/actions/workflows/flutter-multiplatform.yml)
 
-PDFBox Android compatibility may differ across PDF encryption revisions; test with known fixtures. PDFBox uses the owner/user passwords as set by this first version. Future builds can introduce separate owner-password controls and stronger file validation.
+**Signed Android releases:** [Signed Android release](https://github.com/benjaminangella/CrownFiles-Password-Remover/actions/workflows/android-signed-release.yml) — requires publisher-provided signing secrets in GitHub's protected `production` environment.
 
-Office encryption and sheet/workbook protection need their own tested implementation. VBA protection is not supported in this first release.
+See [CI and signing guide](docs/CI-RELEASES.md).
 
-## Build
+## Current shared application
 
-Open this project in Android Studio with JDK 17 and Android SDK 35. Sync Gradle, then run the `app` module on Android 8.0+.
+- Spacious, responsive Crown-themed UI with simple tools and file selection.
+- Local PDF protection with AES-256, unlocking using a correct existing password, and password changes.
+- Save processed PDFs under new filenames; keep original untouched.
+- Basic PDF inspection.
+- Excel, Word and PowerPoint file recognition. **Their security engines are not implemented yet.**
+- Shared file picker for mobile, desktop, and web.
 
-> A source-code foundation, not a published APK. Debug and release builds, device testing, and Play policy review are still required.
+## Security limitations
 
-## Roadmap
+Strong opening-password encryption cannot be guaranteed to be removed without the correct password or another legitimate recovery method. This first implementation does not include forgotten-password cracking or bypass. Editing restrictions and opening-password encryption are distinct.
 
-1. Test PDF inputs: unprotected, known-password encrypted, wrong password, and corrupted files.
-2. Add secure password entry and explicit per-format feature support.
-3. Implement supported Office protections and formats with regression tests.
-4. Add batch operations, accessibility QA, privacy documentation, signing, and Play release workflow.
+The previous Android-specific Kotlin proof of concept remains in `app/` for reference; the supported cross-platform implementation is in `lib/`. The native-only CI is manual.
+
+## Release readiness
+
+CI build success is not a guarantee of correct operation on physical devices. Signed release distributions require publisher certificates/keys, platform validation, privacy review and store testing. An iOS simulator build is **not** a signed IPA and cannot be distributed through the App Store.
