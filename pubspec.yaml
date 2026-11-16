@@ -9,6 +9,7 @@ dependencies:
     sdk: flutter
   file_picker: 13.3.3
   pdf_manipulator: 6.0.0
+  archive: ^4.0.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
