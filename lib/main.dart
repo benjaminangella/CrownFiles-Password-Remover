@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'office_security.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf_manipulator/pdf_manipulator.dart';
 
@@ -216,6 +217,7 @@ class FileScreen extends StatefulWidget {
 
 class _FileScreenState extends State<FileScreen> {
   PlatformFile? selected;
+  OfficeInspection? officeInspection;
   final current = TextEditingController();
   final next = TextEditingController();
   final confirm = TextEditingController();
@@ -232,15 +234,64 @@ class _FileScreenState extends State<FileScreen> {
 
   Future<void> pick() async {
     try {
-      final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['pdf', 'doc', 'docx', 'docm', 'xls', 'xlsx', 'xlsm', 'ppt', 'pptx', 'pptm']);
+      final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: [
+        'pdf', 'doc', 'docx', 'docm', 'dot', 'dotx', 'dotm',
+        'xls', 'xlsx', 'xlsm', 'xlsb', 'xlt', 'xltx', 'xltm', 'xla', 'xlam',
+        'ppt', 'pptx', 'pptm', 'pps', 'ppsx', 'ppsm', 'pot', 'potx', 'potm',
+      ]);
       if (!mounted || file == null) return;
+      OfficeInspection? inspection;
+      var report = '';
+      if (OfficeSecurity.isOfficeFile(file.name)) {
+        try {
+          inspection = OfficeSecurity.inspect(file.name, await file.readAsBytes());
+          report = inspection.summary;
+        } on OfficeSecurityException catch (error) {
+          report = error.message;
+        } catch (error) {
+          report = 'Unable to inspect this file: $error';
+        }
+      }
+      if (!mounted) return;
       setState(() {
         selected = file;
-        message = file.name.toLowerCase().endsWith('.pdf')
-          ? '' : 'Office file recognized. Its password engine is still in development.';
+        officeInspection = inspection;
+        message = report;
       });
     } catch (e) {
-      setState(() => message = 'Could not open the file picker: $e');
+      if (mounted) setState(() => message = 'Could not open the file picker: $e');
+    }
+  }
+
+  Future<void> clearOfficeRestrictions() async {
+    final source = selected;
+    final inspection = officeInspection;
+    if (source == null || inspection == null || !inspection.canClearEditingRestrictions || busy) return;
+    setState(() { busy = true; message = ''; });
+    try {
+      final bytes = await source.readAsBytes();
+      final output = OfficeSecurity.clearEditingRestrictions(source.name, bytes);
+      final dot = source.name.lastIndexOf('.');
+      final outputName = dot < 0
+          ? '${source.name}-editable'
+          : '${source.name.substring(0, dot)}-editable${source.name.substring(dot)}';
+      final saved = await FilePicker.saveFile(
+        dialogTitle: 'Save editable Office copy',
+        fileName: outputName,
+        bytes: output,
+      );
+      if (!mounted) return;
+      setState(() {
+        message = saved == null
+            ? 'Save cancelled. Original file unchanged.'
+            : 'Editable copy saved. The original file remains unchanged.';
+      });
+    } on OfficeSecurityException catch (error) {
+      if (mounted) setState(() => message = error.message);
+    } catch (error) {
+      if (mounted) setState(() => message = 'Could not save editable copy: $error');
+    } finally {
+      if (mounted) setState(() => busy = false);
     }
   }
 
@@ -330,7 +381,7 @@ class _FileScreenState extends State<FileScreen> {
                   const SizedBox(height: 16),
                   Text(widget.action.label, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: ink)),
                   const SizedBox(height: 8),
-                  const Text('PDF files are supported in this release.', style: TextStyle(color: Color(0xFF76849B))),
+                  const Text('Office & PDF security tools', style: TextStyle(color: Color(0xFF76849B))),
                 ]),
               ),
               const SizedBox(height: 24),
@@ -340,6 +391,43 @@ class _FileScreenState extends State<FileScreen> {
                 label: Text(selected?.name ?? 'Choose a file', maxLines: 1, overflow: TextOverflow.ellipsis),
                 style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(58)),
               ),
+              if (officeInspection != null) ...[
+                const SizedBox(height: 16),
+                Card(
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${officeInspection!.kind} security check',
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                        const SizedBox(height: 10),
+                        Text(officeInspection!.summary,
+                            style: const TextStyle(fontSize: 13, color: Color(0xFF63738B))),
+                        if (officeInspection!.hasVbaProject) ...[
+                          const SizedBox(height: 6),
+                          const Text('VBA macro project present. Macro binary is preserved.',
+                              style: TextStyle(fontSize: 12)),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                if (officeInspection!.canClearEditingRestrictions) ...[
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: busy ? null : clearOfficeRestrictions,
+                    icon: const Icon(Icons.edit_document),
+                    label: Text(busy ? 'Processing…' : 'Save Editable Copy'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(54), backgroundColor: navy),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text('Removes sheet/document editing restrictions only. Encrypted opening passwords still require the correct password.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF63738B))),
+                ],
+              ],
               if (isPdf) ...[
                 const SizedBox(height: 20),
                 if (requiresCurrent)
