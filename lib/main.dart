@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'office_security.dart';
 import 'package:flutter/material.dart';
 import 'package:pdf_manipulator/pdf_manipulator.dart';
@@ -67,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final large = MediaQuery.sizeOf(context).width > 800;
+    final embedded = kIsWeb && Uri.base.path.contains('/engine/');
     return Scaffold(
       bottomNavigationBar: large
           ? null
@@ -82,11 +84,11 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 950),
+            constraints: const BoxConstraints(maxWidth: 830),
             child: ListView(
-              padding: EdgeInsets.symmetric(horizontal: large ? 44 : 22, vertical: 20),
+              padding: EdgeInsets.symmetric(horizontal: large ? 28 : 18, vertical: embedded ? 12 : 20),
               children: [
-                Row(children: [
+                if (!embedded) Row(children: [
                   Container(
                     width: 48, height: 48,
                     decoration: BoxDecoration(color: navy, borderRadius: BorderRadius.circular(15)),
@@ -100,17 +102,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     ]),
                   ),
                 ]),
-                const SizedBox(height: 36),
-                if (tab == 0 || large) ...[
-                  const Text('File protection made simple.', style: TextStyle(color: ink, fontSize: 27, height: 1.16, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 9),
-                  const Text('Choose what you need.', style: TextStyle(color: Color(0xFF728098), fontSize: 15)),
-                  const SizedBox(height: 26),
+                SizedBox(height: embedded ? 12 : 28),
+                if (large) ...[
+                  Row(children: [
+                    _WorkspaceTab(label: 'Actions', selected: tab == 0, onTap: () => setState(() => tab = 0)),
+                    const SizedBox(width: 9),
+                    _WorkspaceTab(label: 'File formats', selected: tab == 1, onTap: () => setState(() => tab = 1)),
+                  ]),
+                  const SizedBox(height: 21),
+                ],
+                if (tab == 0) ...[
+                  const Text('Choose an action', style: TextStyle(color: ink, fontSize: 20, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 18),
                   LayoutBuilder(builder: (context, constraints) {
                     final columns = constraints.maxWidth > 600 ? 4 : 2;
                     return GridView.count(
                       crossAxisCount: columns,
-                      childAspectRatio: 1.10,
+                      childAspectRatio: columns == 4 ? 1.55 : 1.22,
                       crossAxisSpacing: 14,
                       mainAxisSpacing: 14,
                       shrinkWrap: true,
@@ -124,17 +132,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   }),
                 ],
-                if (tab == 1 || large) ...[
-                  const SizedBox(height: 34),
-                  const Text('File tools', style: TextStyle(color: ink, fontSize: 21, fontWeight: FontWeight.w800)),
+                if (tab == 1) ...[
+                  const SizedBox(height: 8),
+                  const Text('Choose a file type', style: TextStyle(color: ink, fontSize: 20, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 16),
                   _FormatTile(title: 'PDF Security', detail: 'Protect, unlock, change', symbol: 'PDF', color: const Color(0xFFD6424E), onTap: () => open(FileAction.protect)),
                   _FormatTile(title: 'Excel Tools', detail: 'Inspect & edit workbook locks', symbol: 'X', color: const Color(0xFF168B59), onTap: () => open(FileAction.inspect)),
                   _FormatTile(title: 'Word Tools', detail: 'Inspect & edit document locks', symbol: 'W', color: const Color(0xFF3466CD), onTap: () => open(FileAction.inspect)),
                   _FormatTile(title: 'PowerPoint Tools', detail: 'Inspect presentation security', symbol: 'P', color: const Color(0xFFE37739), onTap: () => open(FileAction.inspect)),
                 ],
-                const SizedBox(height: 32),
-                const Center(child: Text('Local processing • Original files preserved', style: TextStyle(color: Color(0xFF8895A5), fontSize: 12))),
+                const SizedBox(height: 21),
+                const Center(child: Text('Your original files stay unchanged', style: TextStyle(color: Color(0xFF8895A5), fontSize: 12))),
               ],
             ),
           ),
@@ -145,6 +153,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
 }
 
+class _WorkspaceTab extends StatelessWidget {
+  const _WorkspaceTab({required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton(
+    onPressed: onTap,
+    style: OutlinedButton.styleFrom(
+      backgroundColor: selected ? navy : Colors.white,
+      foregroundColor: selected ? Colors.white : navy,
+      side: BorderSide(color: selected ? navy : const Color(0xFFE1E9F5)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 13),
+    ),
+    child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+  );
+}
+
 class _ActionTile extends StatelessWidget {
   const _ActionTile({required this.action, required this.onTap});
   final FileAction action;
@@ -153,19 +181,19 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(color: const Color(0xFFE1E9F5)),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(16),
             ),
             padding: const EdgeInsets.all(15),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(action.icon, color: royal, size: 34),
-              const SizedBox(height: 16),
+              Icon(action.icon, color: navy, size: 31),
+              const SizedBox(height: 11),
               Text(action.label, textAlign: TextAlign.center,
                   style: const TextStyle(color: ink, fontWeight: FontWeight.w700, fontSize: 14)),
             ]),
