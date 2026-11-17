@@ -8,6 +8,8 @@ on:
       - 'test/**'
       - 'pubspec.yaml'
       - 'scripts/prepare_android_play.py'
+      - 'scripts/install_crown_launcher.py'
+      - 'assets/android/**'
       - '.github/workflows/flutter-multiplatform.yml'
   pull_request:
     branches: [main]
@@ -32,6 +34,7 @@ jobs:
           flutter create --platforms=android --org com.arosoft --project-name crown_password_studio .
           flutter pub get
           python3 scripts/prepare_android_play.py
+          python3 scripts/install_crown_launcher.py
       - name: Analyze and test
         run: |
           flutter analyze --no-fatal-infos lib test
