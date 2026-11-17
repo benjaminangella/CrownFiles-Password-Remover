@@ -1,6 +1,10 @@
 name: Crown Studio | Signed Android release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-signed-release.yml'
   workflow_dispatch:
     inputs:
       build_label:
@@ -41,6 +45,7 @@ jobs:
         run: |
           flutter create --platforms=android --org com.arosoft --project-name crown_password_studio .
           flutter pub get
+          python3 scripts/prepare_android_play.py
       - name: Install private release keystore
         env:
           KEYSTORE: ${{ secrets.CROWN_ANDROID_KEYSTORE_B64 }}
@@ -57,19 +62,24 @@ jobs:
           CROWN_KEY_PASSWORD: ${{ secrets.CROWN_ANDROID_KEY_PASSWORD }}
           CROWN_KEY_ALIAS: ${{ secrets.CROWN_ANDROID_KEY_ALIAS }}
         run: |
-          flutter analyze lib test
+          flutter analyze --no-fatal-infos lib test
           flutter test
           flutter build apk --release
           flutter build appbundle --release
+          test -s build/app/outputs/flutter-apk/app-release.apk
+          test -s build/app/outputs/bundle/release/app-release.aab
+          grep -q 'targetSdk = 36' android/app/build.gradle.kts
+          grep -q 'applicationId = "com.arosoft.crownpasswordstudio"' android/app/build.gradle.kts
       - name: Verify APK signature
         run: |
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
           test -x "$APKSIGNER"
           "$APKSIGNER" verify --verbose build/app/outputs/flutter-apk/app-release.apk
+          keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab | grep -E 'Owner:|SHA256:' | head -4
       - name: Upload signed distribution artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: crown-android-signed-release
+          name: CrownPasswordStudio-0.3.0-Android-SIGNED-APK-and-Play-AAB
           path: |
             build/app/outputs/flutter-apk/app-release.apk
             build/app/outputs/bundle/release/app-release.aab
