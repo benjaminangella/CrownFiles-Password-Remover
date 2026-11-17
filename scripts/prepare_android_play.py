@@ -24,7 +24,7 @@ app.write_text(s, encoding="utf8")
 manifest = Path("android/app/src/main/AndroidManifest.xml")
 xml = manifest.read_text(encoding="utf8")
 xml, label_count = re.subn(r'android:label="[^"]+"',
-                           'android:label="Crown Password Studio"', xml, count=1)
+                           'android:label="CrownFiles: Password Remover"', xml, count=1)
 if label_count != 1:
     raise SystemExit("Generated manifest label not found.")
 if 'android:allowBackup=' not in xml:
@@ -32,4 +32,4 @@ if 'android:allowBackup=' not in xml:
 manifest.write_text(xml, encoding="utf8")
 
 print("Play package: com.arosoft.crownpasswordstudio")
-print("compileSdk: 36; targetSdk: 36; backup: disabled; app label: Crown Password Studio")
+print("compileSdk: 36; targetSdk: 36; backup: disabled; app label: CrownFiles: Password Remover")
