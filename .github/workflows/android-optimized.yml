@@ -1,0 +1,60 @@
+name: Android optimized size benchmark
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-optimized.yml'
+      - 'scripts/prepare_android_play.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  optimized-apks:
+    name: Optimized Android release APKs and AAB (test signed only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate platform and install true Crown branding
+        run: |
+          flutter create --platforms=android --org com.arosoft --project-name crown_password_studio .
+          flutter pub get
+          python3 scripts/prepare_android_play.py
+          python3 scripts/install_crown_launcher.py
+      - name: Analyze and test
+        run: |
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Build optimized release APKs split by architecture
+        run: |
+          mkdir -p build/symbols
+          flutter build apk --release --split-per-abi --split-debug-info=build/symbols --tree-shake-icons
+      - name: Build AAB for size comparison (test key - NOT for Play)
+        run: flutter build appbundle --release --split-debug-info=build/symbols --tree-shake-icons
+      - name: Audit output size and make checksums
+        run: |
+          mkdir -p distribution
+          cp build/app/outputs/flutter-apk/app-*-release.apk distribution/
+          cp build/app/outputs/bundle/release/app-release.aab distribution/CrownFiles-0.3.0-TEST-NOT-FOR-PLAY.aab
+          (cd distribution && sha256sum *.apk *.aab > SHA256SUMS.txt)
+          echo '### Android size benchmarks' >> "$GITHUB_STEP_SUMMARY"
+          du -h distribution/* | tee /tmp/sizes.txt
+          cat /tmp/sizes.txt >> "$GITHUB_STEP_SUMMARY"
+          echo "Release APKs and AAB are signed using Flutter's temporary debug keystore; do not publish to Google Play." >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload Android architecture-specific release candidates
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrownFiles-Android-optimized-TEST-APK-and-AAB
+          path: distribution/**
+          if-no-files-found: error
+          retention-days: 14
