@@ -46,6 +46,7 @@ jobs:
           flutter create --platforms=android --org com.arosoft --project-name crown_password_studio .
           flutter pub get
           python3 scripts/prepare_android_play.py
+          python3 scripts/install_crown_launcher.py
       - name: Install private release keystore
         env:
           KEYSTORE: ${{ secrets.CROWN_ANDROID_KEYSTORE_B64 }}
